@@ -37,3 +37,42 @@ kor_total_case.head()
 # %%
 kor_total_case.plot()
 # %%
+usa_df = revise_df[revise_df["location"] == "United States"]
+usa_df.head()
+
+
+# %%
+usa_date_index_df = usa_df.set_index("date")
+usa_date_index_df.head()
+# %%
+usa_total_case = usa_date_index_df["total_cases"]
+usa_total_case.head()
+# %%
+final_df = pd.DataFrame(
+    {
+        'kor' : kor_total_case,
+        'usa' : usa_total_case
+    },index=kor_total_case.index
+)
+final_df.head()
+# %%
+final_df.plot(rot=45)
+# %%
+usa_population = usa_date_index_df['population']['2022-01-01']
+print(usa_population)
+kor_population = korea_date_index_df['population']['2022-01-01']
+print(kor_population)
+# %%
+_rate = round(usa_population/kor_population,2)
+
+print(_rate)
+
+# %%
+_final_df = pd.DataFrame({
+    'kor' : kor_total_case * _rate,
+    'usa' : usa_total_case
+},index=korea_date_index_df.index)
+
+_final_df.plot(rot=45)
+
+# %%
