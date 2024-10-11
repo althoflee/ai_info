@@ -3,3 +3,4 @@ api_keys/
 .DS_Store
 __pycache__/
 __datasets__/
+survey_results_public.csv
