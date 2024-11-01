@@ -69,3 +69,61 @@ print(y_train.shape)
 print(y_test.shape)
 
 # %%
+class LottoLSTM(nn.Module):
+    def __init__(self, input_size,hidden_size,output_size,num_layers) :
+        super(LottoLSTM,self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size,hidden_size,num_layers,batch_first=True)
+        self.fc = nn.Linear(hidden_size,output_size)
+    def forward(self,x) :
+        h0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size)
+        c0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size)
+        out,_= self.lstm(x,(h0,c0))
+        out = self.fc(out[:,-1,:])
+        return out
+
+model = LottoLSTM(7,64,7,2)
+#%%
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(),0.001)
+
+#%% train
+num_epochs = 5000
+for epoch in range(num_epochs) :
+    model.train()
+    outputs = model(X_train)
+    loss = criterion(outputs,y_train)
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    
+    if epoch % 10 == 0 :
+        print(f'Epoch [{epoch}/{num_epochs}] ,loss :{loss.item():.4f}')
+
+# %%
+model.eval()
+with torch.no_grad() :
+    test_outputs = model(X_test)
+    test_loss = criterion( test_outputs, y_test)
+    print(f'Test loss : {test_loss.item():.4f}')
+
+
+# %%
+X_Tensor = torch.tensor(X,dtype=torch.float32)
+last_sequence = X_Tensor[-1].unsqueeze(0)
+#%%
+print(last_sequence)
+# %%
+with torch.no_grad():
+    next_pred = model(last_sequence)
+
+# %%
+print(next_pred)
+# %%
+pre_nums = scaler.inverse_transform(
+    next_pred.detach().numpy())
+#%%
+print(np.round(pre_nums[0]).astype(int)+1)
+# %%
