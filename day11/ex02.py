@@ -9,6 +9,17 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
+#%% gpu check
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+device = torch.device('cpu')
+
+print(device)
+
+#%%
+print(f"cuda version {torch.version.cuda}")
+print(f"device count {torch.cuda.device_count()}")
+print(f"device name : {torch.cuda.get_device_name(0)}")
 #%%
 
 data_1 = pd.read_csv('lotto_1.csv') # 1-600
@@ -55,10 +66,10 @@ print(y.shape)
 # %%
 X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,shuffle=False)
 
-X_train = torch.tensor(X_train,dtype=torch.float32)
-y_train = torch.tensor(y_train,dtype=torch.float32)
-X_test = torch.tensor(X_test,dtype=torch.float32)
-y_test = torch.tensor(y_test,dtype=torch.float32)
+X_train = torch.tensor(X_train,dtype=torch.float32).to(device)
+y_train = torch.tensor(y_train,dtype=torch.float32).to(device)
+X_test = torch.tensor(X_test,dtype=torch.float32).to(device)
+y_test = torch.tensor(y_test,dtype=torch.float32).to(device)
 
 #%%
 
@@ -77,8 +88,8 @@ class LottoLSTM(nn.Module):
         self.lstm = nn.LSTM(input_size,hidden_size,num_layers,batch_first=True)
         self.fc = nn.Linear(hidden_size,output_size)
     def forward(self,x) :
-        h0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size)
-        c0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size)
+        h0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_layers,x.size(0),self.hidden_size).to(device)
         out,_= self.lstm(x,(h0,c0))
         out = self.fc(out[:,-1,:])
         return out
@@ -126,4 +137,37 @@ pre_nums = scaler.inverse_transform(
     next_pred.detach().numpy())
 #%%
 print(np.round(pre_nums[0]).astype(int)+1)
+# %%
+def pridictData(seq_index) :
+    if seq_index < len(X) :
+        # GT ,실제 데이터
+        input_seq = X[seq_index]
+        actual_output = y[seq_index]
+        
+        input_seq = torch.tensor(input_seq,dtype=torch.float32).unsqueeze(0).to(device)
+        actual_output = torch.tensor(actual_output,dtype=torch.float32).unsqueeze(0).to(device)
+        
+        #모델 예측
+        model.eval()
+        with torch.no_grad() :
+            predict_output = model(input_seq)
+        
+        np_predict = predict_output.cpu().detach().numpy()
+        np_actual = actual_output.cpu().detach().numpy()
+        
+        predict_numbers = np.round(scaler.inverse_transform(np_predict)).astype(int)
+        actual_numbers = np.round(scaler.inverse_transform(np_actual)).astype(int)
+        
+        return predict_numbers[0],actual_numbers[0]
+    else :
+        return None
+#%%
+_pre,_gt = pridictData(600)
+print(_pre)
+print(_gt)        
+        
+        
+
+
+
 # %%
