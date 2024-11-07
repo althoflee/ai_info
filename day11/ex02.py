@@ -10,9 +10,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 #%% gpu check
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-device = torch.device('cpu')
+# device = torch.device('cpu')
 
 print(device)
 
@@ -94,12 +94,17 @@ class LottoLSTM(nn.Module):
         out = self.fc(out[:,-1,:])
         return out
 
-model = LottoLSTM(7,64,7,2)
+model = LottoLSTM(7,64,7,2).to(device)
 #%%
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(),0.001)
 
 #%% train
+
+#걸린시간 측정
+import time
+start_time = time.time()
+
 num_epochs = 5000
 for epoch in range(num_epochs) :
     model.train()
@@ -112,6 +117,9 @@ for epoch in range(num_epochs) :
     
     if epoch % 10 == 0 :
         print(f'Epoch [{epoch}/{num_epochs}] ,loss :{loss.item():.4f}')
+
+end_time = time.time()
+print(f"걸린시간 : {end_time - start_time}")
 
 # %%
 model.eval()
