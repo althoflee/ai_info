@@ -10,9 +10,9 @@ from datautil import LottoDataset,getLottoDataset
 batch_size = 64
 train_data,test_data,val_data = getLottoDataset()
 
-train_loader = DataLoader(train_data,64,shuffle=False)
-test_loader = DataLoader(test_data,64,shuffle=False)
-val_loader = DataLoader(val_data,64,shuffle=False)
+train_loader = DataLoader(train_data,batch_size,shuffle=False)
+test_loader = DataLoader(test_data,batch_size,shuffle=False)
+val_loader = DataLoader(val_data,batch_size,shuffle=False)
 
 #%%
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -41,7 +41,6 @@ class LottoPredictor(nn.Module) :
 # %%
 model = LottoPredictor().to(device)
 
-
 # %%
 criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(
@@ -49,10 +48,45 @@ optimizer = torch.optim.Adam(
     lr=0.001)
 print(model.parameters())
 # %% train
+#%%
+def calculate_correct_numbers(output,y_batch,k) :
+    _,topk_indice = torch.topk(output,k,dim=1)
+    preds = torch.zeros_like(output)
+    preds.scatter_(1,topk_indice,1)
+    
+    num_correct_per_sample = (preds * y_batch).sum(dim=1)
+    return num_correct_per_sample.cpu().numpy(),preds
+
+
+
 num_epochs = 1000
 for epoch in range(num_epochs) :
     print(f'train...{epoch}')
-    #...todo...
-
+    model.train()
+    train_losses = []
+    train_correct_numbers = []
+    
+    for x_batch,y_batch in train_loader:
+        x_batch = x_batch.to(device)
+        y-batch = y_batch.to(device)
+        
+        batch_size = x_batch.size(0)
+        hidden = model.init_hidden(batch_size)
+        
+        optimizer.zero_grade()
+        output,hidden = model(x_batch,hidden)
+        loss = criterion(output,y_batch)
+        loss.backward()
+        optimizer.step()
+        
+        hidden = (hidden[0].detach(),hidden[0].detach())
+        train_losses.append(loss.item())
+        
+        num_correct_per_sample , _ = calculate_correct_numbers(output,y_batch,k)
+        train_correct_numbers.extend(num_correct_per_sample)
+        
+    avg_correct_numbers = np.mean(train_correct_numbers)
+    print(f"Epoch {epoch+1}/{num_epochs} , Loss : {np.mean(train_losses)}, correct Numbers:{avg_correct_numbers}")
+        
 
 # %%
