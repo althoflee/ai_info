@@ -5,3 +5,4 @@ __pycache__/
 __datasets__/
 survey_results_public.csv
 __datasets__/
+*.pt
